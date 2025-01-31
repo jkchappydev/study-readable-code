@@ -1,5 +1,9 @@
 package cleancode.minesweeper.tobe;
 
+import cleancode.minesweeper.tobe.cell.Cell;
+import cleancode.minesweeper.tobe.cell.EmptyCell;
+import cleancode.minesweeper.tobe.cell.LandMineCell;
+import cleancode.minesweeper.tobe.cell.NumberCell;
 import cleancode.minesweeper.tobe.gamelevel.GameLevel;
 
 import java.util.Arrays;
@@ -130,21 +134,25 @@ public class GameBoard {
     }
 
     public void initializeGame() {
-        int rowSize = board.length;
-        int colSize = board[0].length;
+        int rowSize = getRowSize();
+        int colSize = getColSize();
 
         for (int row = 0; row < rowSize; row++) {
             for (int col = 0; col < colSize; col++) {
-                board[row][col] = Cell.create(); // 이 부분은 셀을 처음 생성하는 부분이기 때문에 findCell(row, col) 사용 불가.
+                // board[row][col] = Cell.create(); // 이 부분은 셀을 처음 생성하는 부분이기 때문에 findCell(row, col) 사용 불가.
+                board[row][col] = new EmptyCell();
             }
         }
 
         for (int i = 0; i < landMineCount; i++) { // 지뢰 갯수를 의미
             int landMineRow = new Random().nextInt(rowSize);
             int landMineCol = new Random().nextInt(colSize);
-
-            Cell landMineCell = findCell(landMineRow, landMineCol);
-            landMineCell.turnOnLandMine();
+            // Cell2 landMineCell = findCell(landMineRow, landMineCol);
+            // landMineCell.turnOnLandMine();
+            // LandMineCell landMineCell = new LandMineCell();
+            // landMineCell.turnOnLandMine(); // 지뢰 셀인데 생성 시점에 지뢰 셀 표시를 할 필요가 없음
+            // board[landMineRow][landMineCol] = landMineCell;
+            board[landMineRow][landMineCol] = new LandMineCell();
         }
 
         for (int row = 0; row < rowSize; row++) {
@@ -153,20 +161,34 @@ public class GameBoard {
                     // NEARBY_LAND_MINE_COUNTS[row][col] = 0; 셀의 기본 속성을 0으로 했기 때문에 사실 아무것도 안해도 됨.
                     continue;
                 }
-                int count = countNearbyLandMines(row, col);
-                Cell cell = findCell(row, col);
-                cell.updateNearbyLandMineCount(count);
+                int count = countNearbyLandMines(row, col); // 주변 지뢰 셀을 할당한 다음에
+                // Cell2 cell = findCell(row, col);
+                // cell.updateNearbyLandMineCount(count);
+                NumberCell numberCell = new NumberCell(count); // 숫자 셀을 만듦
+                // numberCell이 추가됨으로써 기존에는 없던, 지뢰 셀이 없는 경우 0이라는 숫자가 출력됨
+                if(count == 0) {
+                    continue;
+                }
+                // 이 로직도 이렇게 처리를 하니깐 지뢰 셀과 빈 셀에서도 뭔가 처리를 해 줘야 하기 때문에 따로 예외처리를 한 것임
+                // 그냥 생성자에 담아서 넘기기 NumberCell numberCell = new NumberCell(); -> NumberCell numberCell = new NumberCell(count);
+                // numberCell.updateNearbyLandMineCount(count);
+                board[row][col] = numberCell;
             }
         }
     }
 
-    public int getRowSize() {
-        return board.length;
-    }
-
-    public int getColSize() {
-        return board[0].length;
-    }
+    // LSP 위반 예시
+    // 만약에 하위 구현체들 중에, updateNearbyLandMineCount를 사용하는 부분이 있다면,
+    // 해당 코드를 이렇게 놔둘 경우에 Cell의 종류(지뢰 셀, 숫자 셀, 빈 셀)가 어떤 건지에 따라서 프로그램이 막 터지는 경우가 있음.
+    // updateNearbyLandMineCount는 숫자 셀에서만 사용함, 지뢰 셀, 빈 셀에서는 예외를 던짐.
+    // 부모 클래스에서 원하는 동작을 특정 자식 클래스(지뢰 셀, 빈 셀)에서는 하지 않고 있음.(예외 처리가 되어있기 때문에)
+    // 따라서, 숫자 셀인지 검증하는 타입 체크 로직이 추가적으로 필요함 (하지만, 상속 구조에서는 타입 체크 로직이 없어야 하는것이 정상임)
+    // 따라서, 해당 현상은 LSP를 위반하였기에 발생하는 현상임.
+//    public void temp(Cell2 cell) {
+//        if(cell instanceof NumberCell) {
+//            cell.updateNearbyLandMineCount(0);
+//        }
+//    }
 
     public String getSign(int rowIndex, int colIndex) { // 밖에서 어떤 건지 알 수 있게 row -> rowIndex, col -> colIndex 로 메서드 시그니처 변경
         Cell cell = findCell(rowIndex, colIndex);
@@ -175,6 +197,14 @@ public class GameBoard {
 
     private Cell findCell(int row, int col) {
         return board[row][col];
+    }
+
+    public int getRowSize() {
+        return board.length;
+    }
+
+    public int getColSize() {
+        return board[0].length;
     }
 
     private int countNearbyLandMines(int row, int col) {
