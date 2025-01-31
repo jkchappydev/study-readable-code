@@ -1,17 +1,23 @@
 package cleancode.minesweeper.tobe;
 
+import cleancode.minesweeper.tobe.gamelevel.GameLevel;
+
 import java.util.Arrays;
 import java.util.Random;
 
 public class GameBoard {
 
-    private static final int LAND_MINE_COUNT = 10;
-
     private final Cell[][] board;
+    private final int landMineCount;
 
-    // public method 위쪽에 선언
-    public GameBoard(int rowSize, int colSize) {
+    // GameBoard 입장에서는 GameLevel을 전달받았는데, 인터페이스여서
+    // runtime 시점 에서는 어떤 구현체가 들어오는지는 모르지만, 추상화된 스펙(rowSize, colSize, landMineCount)은 알고있기 때문에 실행 가능
+    public GameBoard(GameLevel gameLevel) {
+        int rowSize = gameLevel.getColSize();
+        int colSize = gameLevel.getRowSize();
         board = new Cell[rowSize][colSize];
+
+        landMineCount = gameLevel.getLandMineCount();
     }
 
     public void flag(int rowIndex, int colIndex) {
@@ -133,10 +139,11 @@ public class GameBoard {
             }
         }
 
-        for (int i = 0; i < LAND_MINE_COUNT; i++) { // 지뢰 갯수를 의미
-            int landMineCol = new Random().nextInt(colSize);
+        for (int i = 0; i < landMineCount; i++) { // 지뢰 갯수를 의미
             int landMineRow = new Random().nextInt(rowSize);
-            Cell landMineCell = findCell(landMineCol, landMineRow);
+            int landMineCol = new Random().nextInt(colSize);
+
+            Cell landMineCell = findCell(landMineRow, landMineCol);
             landMineCell.turnOnLandMine();
         }
 
