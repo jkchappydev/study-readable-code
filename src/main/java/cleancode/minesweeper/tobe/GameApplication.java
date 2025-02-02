@@ -1,6 +1,10 @@
 package cleancode.minesweeper.tobe;
 
 import cleancode.minesweeper.tobe.gamelevel.*;
+import cleancode.minesweeper.tobe.io.ConsoleInputHandler;
+import cleancode.minesweeper.tobe.io.ConsoleOutputHandler;
+import cleancode.minesweeper.tobe.io.InputHandler;
+import cleancode.minesweeper.tobe.io.OutputHandler;
 
 public class GameApplication {
 
@@ -14,10 +18,13 @@ public class GameApplication {
 //        GameLevel gameLevel = new Beginner();
 //        GameLevel gameLevel = new Middle();
         GameLevel gameLevel = new Advanced();
+        // DIP : inputHandler의 구현체는 ConsoleInputHandler, outputHandler의 구현체는 ConsoleOutputHandler
+        // 실제 외부에서 실행시점에 어떤 구현체를 넣어줄 것인지를 결정
+        InputHandler inputHandler = new ConsoleInputHandler();
+        OutputHandler outputHandler = new ConsoleOutputHandler();
 
-        Minesweeper minesweeper = new Minesweeper(gameLevel);
+        Minesweeper minesweeper = new Minesweeper(gameLevel, inputHandler, outputHandler);
         minesweeper.initialize();
         minesweeper.run();
     }
-
 }

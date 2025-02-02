@@ -3,19 +3,35 @@ package cleancode.minesweeper.tobe;
 import cleancode.minesweeper.tobe.game.GameInitializable;
 import cleancode.minesweeper.tobe.game.GameRunnable;
 import cleancode.minesweeper.tobe.gamelevel.GameLevel;
-import cleancode.minesweeper.tobe.io.ConsoleInputHandler;
-import cleancode.minesweeper.tobe.io.ConsoleOutputHandler;
+import cleancode.minesweeper.tobe.io.InputHandler;
+import cleancode.minesweeper.tobe.io.OutputHandler;
 
 public class Minesweeper implements GameInitializable, GameRunnable {
 
     private final GameBoard gameBoard; // Board 입장에서는 GameBoard 로 객체화 및 내부에서 캡슐화 되어있어서, 데이터 구조에 대해서는 모른다.
     private final BoardIndexConverter boardIndexConverter = new BoardIndexConverter();
-    private final ConsoleInputHandler consoleInputHandler = new ConsoleInputHandler();
-    private final ConsoleOutputHandler consoleOutputHandler = new ConsoleOutputHandler();
+    // DIP
+    // Minesweeper 입장 에서는 얘네들은 너무 저수준 모듈임
+    // 사용자는 현재 console로만 이 게임과 소통을 할 수 있음
+    // 만약, 이 지뢰찾기가 어떤 웹페이지에서 동작하는 거라면?
+    // Minesweeper이라는 지뢰찾기의 도메인 룰(=규칙)은 변하지 않지만, console 이냐 web 이냐가 변경됨.
+    // 이 지뢰찾기를 웹 페이지에 올리기 위해서는 현재 consoleInputHandler과 consoleOutputHandler가 직접적으로 박혀 있기 때문에,
+    // 해당 두 개의 기능에 변경이 불가피하다. 하지만 사용자와 소통한다는 기능 자체는 변함이 없음.
+    // private final ConsoleInputHandler inputHandler = new ConsoleInputHandler();
+    // private final ConsoleOutputHandler outputHandler = new ConsoleOutputHandler();
+    private final InputHandler inputHandler;
+    private final OutputHandler outputHandler;
+
     private int gameStatus = 0; // 0: 게임 중, 1: 승리, -1: 패배
 
-    public Minesweeper(GameLevel gameLevel) {
+    // DIP : InputHandler와 OutputHandler을 외부에서 받도록 구현
+    // Minesweeper은 InputHandler와 OutputHandler라는 인터페이스만 알고 있음. 인터페이스만 받아서 사용하고, 실제로 어떤게 들어오는지는 신경쓰지 않아도 됨
+    // 고수준 모듈(Minesweeper)이 InputHandler, OutputHandler의 추상화에만 의존하게 됨.
+    // 기존에는 저수준 모듈인 ConsoleInputHandler, ConsoleOutputHandler 직접 사용
+    public Minesweeper(GameLevel gameLevel, InputHandler inputHandler, OutputHandler outputHandler) {
         gameBoard = new GameBoard(gameLevel); // gameBoard를 생성할 때, gameLevel을 전달함
+        this.inputHandler = inputHandler;
+        this.outputHandler = outputHandler;
     }
 
     @Override
@@ -25,19 +41,19 @@ public class Minesweeper implements GameInitializable, GameRunnable {
 
     @Override
     public void run() {
-        consoleOutputHandler.showGameStartComments();
+        outputHandler.showGameStartComments();
 
         while (true) {
             try {
-                consoleOutputHandler.showBoard(gameBoard);
+                outputHandler.showBoard(gameBoard);
 
                 // 이렇게 하면 읽는 사람의 입장에서 gameStatus가 어떤 의미를 가지고 있는지 해석할 필요가 없다.
                 if (doesUserWinTheGame()) {
-                    consoleOutputHandler.printGameWinningComment();
+                    outputHandler.showGameWinningComment();
                     break;
                 }
                 if (doesUserLoseTheGame()) {
-                    consoleOutputHandler.printGameLosingComment();
+                    outputHandler.showGameLosingComment();
                     break;
                 }
 
@@ -46,10 +62,10 @@ public class Minesweeper implements GameInitializable, GameRunnable {
                 actOnCell(cellInput, userActionInput);
             } catch (GameException e) {
                 // 개발자가 의도한 예외 상황 (예외 상황에 대한 메세지 출력)
-                consoleOutputHandler.printExceptionMessage(e);
+                outputHandler.showExceptionMessage(e);
             } catch (Exception e) {
                 // 프로그램에서 처리한 예외 상황 (단순 메세지 출력)
-                consoleOutputHandler.printSimpleMessage("프로그램에 문제가 생겼습니다.");
+                outputHandler.showSimpleMessage("프로그램에 문제가 생겼습니다.");
                 // e.printStackTrace(); // 실무에서는 안티 패턴. log 사용
             }
         }
@@ -103,13 +119,13 @@ public class Minesweeper implements GameInitializable, GameRunnable {
     }
 
     private String getUserActionInputFromUser() {
-        consoleOutputHandler.printCommentForUserAction();
-        return consoleInputHandler.getUserInput();
+        outputHandler.showCommentForUserAction();
+        return inputHandler.getUserInput();
     }
 
     private String getCellInputFromUser() {
-        consoleOutputHandler.printCommentForSelectionCell();
-        return consoleInputHandler.getUserInput();
+        outputHandler.showCommentForSelectionCell();
+        return inputHandler.getUserInput();
     }
 
     private boolean doesUserLoseTheGame() {
