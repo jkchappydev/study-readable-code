@@ -2,6 +2,7 @@ package cleancode.minesweeper.tobe.io;
 
 import cleancode.minesweeper.tobe.GameBoard;
 import cleancode.minesweeper.tobe.GameException;
+import cleancode.minesweeper.tobe.position.CellPosition;
 
 import java.util.List;
 import java.util.stream.IntStream;
@@ -24,7 +25,8 @@ public class ConsoleOutputHandler implements OutputHandler {
         for (int row = 0; row < board.getRowSize(); row++) { // board 안쪽으로 cell이 숨어들어갔기 때문에 board한테 rowSize좀 줄래? 해서 getRowSize()
             System.out.printf("%2d  ", row + 1);
             for (int col = 0; col < board.getColSize(); col++) {
-                System.out.print(board.getSign(row, col) + " "); // getter를 사용하는 이유 : board를 그리는 쪽은 여긴데, cell에다가 board를 그려줘 하는 것은 관심사가 쪼개짐
+                CellPosition cellPosition = CellPosition.of(row, col);
+                System.out.print(board.getSign(cellPosition) + " "); // getter를 사용하는 이유 : board를 그리는 쪽은 여긴데, cell에다가 board를 그려줘 하는 것은 관심사가 쪼개짐
             } //board.getCell().getSign() <- 무례한 것 (혹시 row, col 인덱스에 있는 cell의 sign좀 줄래? 라고 변경)
             System.out.println();
         }

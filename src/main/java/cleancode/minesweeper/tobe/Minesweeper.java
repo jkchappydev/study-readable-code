@@ -5,11 +5,11 @@ import cleancode.minesweeper.tobe.game.GameRunnable;
 import cleancode.minesweeper.tobe.gamelevel.GameLevel;
 import cleancode.minesweeper.tobe.io.InputHandler;
 import cleancode.minesweeper.tobe.io.OutputHandler;
+import cleancode.minesweeper.tobe.position.CellPosition;
 
 public class Minesweeper implements GameInitializable, GameRunnable {
 
     private final GameBoard gameBoard; // Board 입장에서는 GameBoard 로 객체화 및 내부에서 캡슐화 되어있어서, 데이터 구조에 대해서는 모른다.
-    private final BoardIndexConverter boardIndexConverter = new BoardIndexConverter();
     // DIP
     // Minesweeper 입장 에서는 얘네들은 너무 저수준 모듈임
     // 사용자는 현재 console로만 이 게임과 소통을 할 수 있음
@@ -57,9 +57,9 @@ public class Minesweeper implements GameInitializable, GameRunnable {
                     break;
                 }
 
-                String cellInput = getCellInputFromUser();
+                CellPosition cellPosition = getCellInputFromUser();
                 String userActionInput = getUserActionInputFromUser();
-                actOnCell(cellInput, userActionInput);
+                actOnCell(cellPosition, userActionInput);
             } catch (GameException e) {
                 // 개발자가 의도한 예외 상황 (예외 상황에 대한 메세지 출력)
                 outputHandler.showExceptionMessage(e);
@@ -72,16 +72,16 @@ public class Minesweeper implements GameInitializable, GameRunnable {
 
     }
 
-    private void actOnCell(String cellInput, String userActionInput) {
-        int selectedColIndex = boardIndexConverter.getSelectedColIndex(cellInput, gameBoard.getColSize());
-        int selectedRowIndex = boardIndexConverter.getSelectedRowIndex(cellInput, gameBoard.getRowSize());
+    private void actOnCell(CellPosition cellPosition, String userActionInput) {
+        // int selectedColIndex = boardIndexConverter.getSelectedColIndex(cellInput, gameBoard.getColSize());
+        // int selectedRowIndex = boardIndexConverter.getSelectedRowIndex(cellInput, gameBoard.getRowSize());
 
         if (doesUserChooseToPlantFlag(userActionInput)) {
             // 셀을 갈아끼우는 것이 아닌 셀의 상태를 바꿀거임
             // BOARD[selectedRowIndex][selectedColIndex] = Cell.ofFlag();
             // BOARD[selectedRowIndex][selectedColIndex].flag();
             // gameBoard에 요청 (flag()를 해줘. selectedRowIndex 와 selectedColIndex를 가진 애한테)
-            gameBoard.flag(selectedRowIndex, selectedColIndex);
+            gameBoard.flagAt(cellPosition);
             checkIfGameIsOver();
             return;
         }
@@ -89,17 +89,17 @@ public class Minesweeper implements GameInitializable, GameRunnable {
         // 앞의 if의 조건을 기억할 필요가 없음.
         if (doesUserChooseToOpenCell(userActionInput)) {
             // 이제 gameBoard 에 물어봐야 함.
-            if (gameBoard.isLandMineCell(selectedRowIndex, selectedColIndex)) {
+            if (gameBoard.isLandMineCellAt(cellPosition)) {
                 // initializeGame의 turnOnLandMine() 부분에서 지뢰셀로 갈아 끼웟기 떼문에 사실 필요가 없음.
                 // BOARD[selectedRowIndex][selectedColIndex] = Cell.ofLandMine(); 지뢰셀로 갈아 끼우는 부분
                 // BOARD[selectedRowIndex][selectedColIndex].open();
                 // gameBoard에 요청
-                gameBoard.open(selectedRowIndex, selectedColIndex);
+                gameBoard.openAt(cellPosition);
                 changeGameStatusToLose();
                 return;
             }
 
-            gameBoard.openSurroundedCells(selectedRowIndex, selectedColIndex);
+            gameBoard.openSurroundedCells(cellPosition);
             checkIfGameIsOver();
             return;
         }
@@ -123,9 +123,16 @@ public class Minesweeper implements GameInitializable, GameRunnable {
         return inputHandler.getUserInput();
     }
 
-    private String getCellInputFromUser() {
+    private CellPosition getCellInputFromUser() {
         outputHandler.showCommentForSelectionCell();
-        return inputHandler.getUserInput();
+
+        // CellPosition이라는 Value Object가 만들어 질 때부터 유효성 검사하고, 만들어 지는 순간 인덱스의 기능을 함
+        CellPosition cellPosition = inputHandler.getCellPositionFromUser();
+        if (gameBoard.isInvalidCellPosition(cellPosition)) { // 올바른 cellPosition으로 gameBoard에서 동작할 수 있는가?
+            throw new GameException("잘못된 좌표를 선택하셨습니다.");
+        }
+
+        return cellPosition;
     }
 
     private boolean doesUserLoseTheGame() {
