@@ -3,12 +3,10 @@ package cleancode.minesweeper.tobe;
 import cleancode.minesweeper.tobe.cell.*;
 import cleancode.minesweeper.tobe.gamelevel.GameLevel;
 import cleancode.minesweeper.tobe.position.CellPosition;
+import cleancode.minesweeper.tobe.position.CellPositions;
 import cleancode.minesweeper.tobe.position.RelativePosition;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
-import java.util.stream.Stream;
 
 public class GameBoard {
 
@@ -82,46 +80,10 @@ public class GameBoard {
         return cell.isLandMine(); // 이 셀이 지뢰셀 이야?
     }
 
-    // 컴파일 에러를 최소화하면서 리팩토링 할 때는 리팩토리 할 대상의 메소드를 일단 복제한다.
-    // 그러고 나서, 해당 메소드를 사용하는 곳을 임시로 아래 메소드명으로 바꾼다.
-    // 그러고 나서, 기존 메서드를 삭제하고 아래 메서드를 기존 메서드 명으로 바꾼다.
     public boolean isAllCellChecked() {
-        // 1.
-//        boolean isAllOpened = true;
-//        for (int row = 0; row < BOARD_ROW_SIZE; row++) {
-//            for (int col = 0; col < BOARD_COL_SIZE; col++) {
-//                // BOARD[row][col]를 순회하고 싶은 것이 목적
-//                if (BOARD[row][col].equals(CLOSED_CELL_SIGN)) {
-//                    isAllOpened = false;
-//                }
-//            }
-//        }
-//        return isAllOpened;
-
-        // 2. 중첩 배열을 stream 으로 처리
-//        Stream<String[]> stringArrayStream = Arrays.stream(BOARD);
-//        Stream<Stream<String>> stringStream = stringArrayStream
-//                .map(stringArray -> {
-//                    Stream<String> stringStream2 = Arrays.stream(stringArray);
-//                    return stringStream2;
-//                });
-
-        // 3. 평탄화 (이중 배열을 그냥 배열로 : flatMap)
-//        Stream<String[]> stringArrayStream = Arrays.stream(BOARD);
-//        Stream<String> stringStream = stringArrayStream
-//                .flatMap(stringArray -> {
-//                    Stream<String> stringStream2 = Arrays.stream(stringArray);
-//                    return stringStream2;
-//                });
-//        return stringStream // Stream<String>
-//                .noneMatch(cell -> cell.equals(CLOSED_CELL_SIGN)); // 닫힌 셀(CLOSED_CELL_SIGN)이 하나도 없으면(noneMatch()), 셀이 다 열린 것
-
-        // 4. 최종
-        return Arrays.stream(board) // 각각의 String[]에 대해 stream 을 걸고,
-                .flatMap(Arrays::stream) // 평탄화를 시키면 전체 String 에 대한 stream 으로 1차원적으로 표현 가능
-                // .noneMatch(cell -> cell.getSign().equals(CLOSED_CELL_SIGN)); <- 객체에 물어보는 방식으로 변경해야 함
-                // .noneMatch(cell -> CLOSED_CELL_SIGN.equals(cell));
-                .allMatch(Cell::isChecked);
+        // board로부터 cells일급 컬렉션을 만들고, 모든 셀이 체크되었는지를 묻는 두가지 단계로 진행됨
+        Cells cells = Cells.from(board);
+        return cells.isAllChecked();
     }
 
     public boolean isInvalidCellPosition(CellPosition cellPosition) {
@@ -133,49 +95,41 @@ public class GameBoard {
     }
 
     public void initializeGame() {
-        int rowSize = getRowSize();
-        int colSize = getColSize();
+        CellPositions cellPositions = CellPositions.from(board);
 
-        for (int row = 0; row < rowSize; row++) {
-            for (int col = 0; col < colSize; col++) {
-                // board[row][col] = Cell.create(); // 이 부분은 셀을 처음 생성하는 부분이기 때문에 findCell(row, col) 사용 불가.
-                board[row][col] = new EmptyCell();
+        initializeEmptyCells(cellPositions);
+
+        List<CellPosition> landMinePositions = cellPositions.extractRandomPositions(landMineCount);
+        initializeLandMineCells(landMinePositions);
+
+        List<CellPosition> numberPositionCandidates = cellPositions.subtract(landMinePositions);
+        initializeNumberCells(numberPositionCandidates);
+    }
+
+    private void initializeEmptyCells(CellPositions cellPositions) {
+        List<CellPosition> allPositions = cellPositions.getPositions();
+        for (CellPosition position : allPositions) {
+            updateCellAt(position, new EmptyCell());
+        }
+    }
+
+    private void initializeLandMineCells(List<CellPosition> landMinePositions) {
+        for (CellPosition position : landMinePositions) {
+            updateCellAt(position, new LandMineCell());
+        }
+    }
+
+    private void initializeNumberCells(List<CellPosition> numberPositionCandidates) {
+        for (CellPosition candidatePosition : numberPositionCandidates) {
+            int count = countNearbyLandMines(candidatePosition);
+            if(count != 0) {
+                updateCellAt(candidatePosition, new NumberCell(count));
             }
         }
+    }
 
-        for (int i = 0; i < landMineCount; i++) { // 지뢰 갯수를 의미
-            int landMineRow = new Random().nextInt(rowSize);
-            int landMineCol = new Random().nextInt(colSize);
-            // Cell2 landMineCell = findCell(landMineRow, landMineCol);
-            // landMineCell.turnOnLandMine();
-            // LandMineCell landMineCell = new LandMineCell();
-            // landMineCell.turnOnLandMine(); // 지뢰 셀인데 생성 시점에 지뢰 셀 표시를 할 필요가 없음
-            // board[landMineRow][landMineCol] = landMineCell;
-            board[landMineRow][landMineCol] = new LandMineCell();
-        }
-
-        for (int row = 0; row < rowSize; row++) {
-            for (int col = 0; col < colSize; col++) {
-                CellPosition cellPosition = CellPosition.of(row, col);
-
-                if (isLandMineCellAt(cellPosition)) {
-                    // NEARBY_LAND_MINE_COUNTS[row][col] = 0; 셀의 기본 속성을 0으로 했기 때문에 사실 아무것도 안해도 됨.
-                    continue;
-                }
-                int count = countNearbyLandMines(cellPosition); // 주변 지뢰 셀을 할당한 다음에
-                // Cell2 cell = findCell(row, col);
-                // cell.updateNearbyLandMineCount(count);
-                NumberCell numberCell = new NumberCell(count); // 숫자 셀을 만듦
-                // numberCell이 추가됨으로써 기존에는 없던, 지뢰 셀이 없는 경우 0이라는 숫자가 출력됨
-                if(count == 0) {
-                    continue;
-                }
-                // 이 로직도 이렇게 처리를 하니깐 지뢰 셀과 빈 셀에서도 뭔가 처리를 해 줘야 하기 때문에 따로 예외처리를 한 것임
-                // 그냥 생성자에 담아서 넘기기 NumberCell numberCell = new NumberCell(); -> NumberCell numberCell = new NumberCell(count);
-                // numberCell.updateNearbyLandMineCount(count);
-                board[row][col] = numberCell;
-            }
-        }
+    private void updateCellAt(CellPosition position, Cell cell) {
+        board[position.getRowIndex()][position.getColIndex()] = cell;
     }
 
     // LSP 위반 예시
