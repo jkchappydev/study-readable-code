@@ -94,6 +94,11 @@ public class GameBoard {
                 || cellPosition.isColIndexMoreThanOrEqual(colSize);
     }
 
+    public CellSnapshot getSnapshot(CellPosition cellPosition) {
+        Cell cell = findCell(cellPosition);
+        return cell.getSnapshot();
+    }
+
     public void initializeGame() {
         CellPositions cellPositions = CellPositions.from(board);
 
@@ -144,11 +149,6 @@ public class GameBoard {
 //            cell.updateNearbyLandMineCount(0);
 //        }
 //    }
-
-    public String getSign(CellPosition cellPosition) { // 밖에서 어떤 건지 알 수 있게 row -> rowIndex, col -> colIndex 로 메서드 시그니처 변경
-        Cell cell = findCell(cellPosition);
-        return cell.getSign();
-    }
 
     private Cell findCell(CellPosition cellPosition) {
         return board[cellPosition.getRowIndex()][cellPosition.getColIndex()];
