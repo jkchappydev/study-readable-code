@@ -5,6 +5,7 @@ import cleancode.minesweeper.tobe.game.GameRunnable;
 import cleancode.minesweeper.tobe.gamelevel.GameLevel;
 import cleancode.minesweeper.tobe.io.InputHandler;
 import cleancode.minesweeper.tobe.io.OutputHandler;
+import cleancode.minesweeper.tobe.io.config.GameConfig;
 import cleancode.minesweeper.tobe.position.CellPosition;
 import cleancode.minesweeper.user.UserAction;
 
@@ -29,10 +30,16 @@ public class Minesweeper implements GameInitializable, GameRunnable {
     // Minesweeper은 InputHandler와 OutputHandler라는 인터페이스만 알고 있음. 인터페이스만 받아서 사용하고, 실제로 어떤게 들어오는지는 신경쓰지 않아도 됨
     // 고수준 모듈(Minesweeper)이 InputHandler, OutputHandler의 추상화에만 의존하게 됨.
     // 기존에는 저수준 모듈인 ConsoleInputHandler, ConsoleOutputHandler 직접 사용
-    public Minesweeper(GameLevel gameLevel, InputHandler inputHandler, OutputHandler outputHandler) {
-        gameBoard = new GameBoard(gameLevel); // gameBoard를 생성할 때, gameLevel을 전달함
-        this.inputHandler = inputHandler;
-        this.outputHandler = outputHandler;
+//    public Minesweeper(GameLevel gameLevel, InputHandler inputHandler, OutputHandler outputHandler) {
+//        gameBoard = new GameBoard(gameLevel); // gameBoard를 생성할 때, gameLevel을 전달함
+//        this.inputHandler = inputHandler;
+//        this.outputHandler = outputHandler;
+//    }
+
+    public Minesweeper(GameConfig gameConfig) {
+        gameBoard = new GameBoard(gameConfig.getGameLevel());
+        this.inputHandler = gameConfig.getInputHandler();
+        this.outputHandler = gameConfig.getOutputHandler();
     }
 
     @Override
