@@ -2,7 +2,6 @@ package cleancode.minesweeper.tobe;
 
 import cleancode.minesweeper.tobe.game.GameInitializable;
 import cleancode.minesweeper.tobe.game.GameRunnable;
-import cleancode.minesweeper.tobe.gamelevel.GameLevel;
 import cleancode.minesweeper.tobe.io.InputHandler;
 import cleancode.minesweeper.tobe.io.OutputHandler;
 import cleancode.minesweeper.tobe.io.config.GameConfig;
@@ -23,8 +22,6 @@ public class Minesweeper implements GameInitializable, GameRunnable {
     // private final ConsoleOutputHandler outputHandler = new ConsoleOutputHandler();
     private final InputHandler inputHandler;
     private final OutputHandler outputHandler;
-
-    private int gameStatus = 0; // 0: 게임 중, 1: 승리, -1: 패배
 
     // DIP : InputHandler와 OutputHandler을 외부에서 받도록 구현
     // Minesweeper은 InputHandler와 OutputHandler라는 인터페이스만 알고 있음. 인터페이스만 받아서 사용하고, 실제로 어떤게 들어오는지는 신경쓰지 않아도 됨
@@ -51,19 +48,9 @@ public class Minesweeper implements GameInitializable, GameRunnable {
     public void run() {
         outputHandler.showGameStartComments();
 
-        while (true) {
+        while (gameBoard.isInProgress()) {
             try {
                 outputHandler.showBoard(gameBoard);
-
-                // 이렇게 하면 읽는 사람의 입장에서 gameStatus가 어떤 의미를 가지고 있는지 해석할 필요가 없다.
-                if (doesUserWinTheGame()) {
-                    outputHandler.showGameWinningComment();
-                    break;
-                }
-                if (doesUserLoseTheGame()) {
-                    outputHandler.showGameLosingComment();
-                    break;
-                }
 
                 CellPosition cellPosition = getCellInputFromUser();
                 UserAction userActionInput = getUserActionInputFromUser();
@@ -78,44 +65,28 @@ public class Minesweeper implements GameInitializable, GameRunnable {
             }
         }
 
+        outputHandler.showBoard(gameBoard);
+
+        if (gameBoard.isWinStatus()) {
+            outputHandler.showGameWinningComment();
+        }
+        if (gameBoard.isLoseStatus()) {
+            outputHandler.showGameLosingComment();
+        }
     }
 
     private void actOnCell(CellPosition cellPosition, UserAction userActionInput) {
-        // int selectedColIndex = boardIndexConverter.getSelectedColIndex(cellInput, gameBoard.getColSize());
-        // int selectedRowIndex = boardIndexConverter.getSelectedRowIndex(cellInput, gameBoard.getRowSize());
-
         if (doesUserChooseToPlantFlag(userActionInput)) {
-            // 셀을 갈아끼우는 것이 아닌 셀의 상태를 바꿀거임
-            // BOARD[selectedRowIndex][selectedColIndex] = Cell.ofFlag();
-            // BOARD[selectedRowIndex][selectedColIndex].flag();
-            // gameBoard에 요청 (flag()를 해줘. selectedRowIndex 와 selectedColIndex를 가진 애한테)
             gameBoard.flagAt(cellPosition);
-            checkIfGameIsOver();
             return;
         }
 
-        // 앞의 if의 조건을 기억할 필요가 없음.
         if (doesUserChooseToOpenCell(userActionInput)) {
-            // 이제 gameBoard 에 물어봐야 함.
-            if (gameBoard.isLandMineCellAt(cellPosition)) {
-                // initializeGame의 turnOnLandMine() 부분에서 지뢰셀로 갈아 끼웟기 떼문에 사실 필요가 없음.
-                // BOARD[selectedRowIndex][selectedColIndex] = Cell.ofLandMine(); 지뢰셀로 갈아 끼우는 부분
-                // BOARD[selectedRowIndex][selectedColIndex].open();
-                // gameBoard에 요청
-                gameBoard.openAt(cellPosition);
-                changeGameStatusToLose();
-                return;
-            }
-
-            gameBoard.openSurroundedCells(cellPosition);
-            checkIfGameIsOver();
+            gameBoard.openAt(cellPosition);
             return;
         }
-        throw new GameException("잘못된 번호를 선택하셨습니다.");
-    }
 
-    private void changeGameStatusToLose() {
-        gameStatus = -1;
+        throw new GameException("잘못된 번호를 선택하셨습니다.");
     }
 
     private boolean doesUserChooseToOpenCell(UserAction userAction) {
@@ -141,24 +112,6 @@ public class Minesweeper implements GameInitializable, GameRunnable {
         }
 
         return cellPosition;
-    }
-
-    private boolean doesUserLoseTheGame() {
-        return gameStatus == -1;
-    }
-
-    private boolean doesUserWinTheGame() {
-        return gameStatus == 1;
-    }
-
-    private void checkIfGameIsOver() {
-        if (gameBoard.isAllCellChecked()) {
-            changeGameStatusToWin();
-        }
-    }
-
-    private void changeGameStatusToWin() {
-        gameStatus = 1;
     }
 
     // 만약에, 여러군데에서 사용하는 메서드라면, 해당 메서드를 수정 또는 변경 했을 때 해당 메서드를 사용하는 곳이 모두 영향이 간다.
