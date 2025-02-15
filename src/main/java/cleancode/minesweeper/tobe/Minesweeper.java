@@ -75,6 +75,23 @@ public class Minesweeper implements GameInitializable, GameRunnable {
         }
     }
 
+    private CellPosition getCellInputFromUser() {
+        outputHandler.showCommentForSelectionCell();
+
+        // CellPosition이라는 Value Object가 만들어 질 때부터 유효성 검사하고, 만들어 지는 순간 인덱스의 기능을 함
+        CellPosition cellPosition = inputHandler.getCellPositionFromUser();
+        if (gameBoard.isInvalidCellPosition(cellPosition)) { // 올바른 cellPosition으로 gameBoard에서 동작할 수 있는가?
+            throw new GameException("잘못된 좌표를 선택하셨습니다.");
+        }
+
+        return cellPosition;
+    }
+
+    private UserAction getUserActionInputFromUser() {
+        outputHandler.showCommentForUserAction();
+        return inputHandler.getUserActionFromUser();
+    }
+
     private void actOnCell(CellPosition cellPosition, UserAction userActionInput) {
         if (doesUserChooseToPlantFlag(userActionInput)) {
             gameBoard.flagAt(cellPosition);
@@ -95,23 +112,6 @@ public class Minesweeper implements GameInitializable, GameRunnable {
 
     private boolean doesUserChooseToPlantFlag(UserAction userAction) {
         return userAction == UserAction.FLAG;
-    }
-
-    private UserAction getUserActionInputFromUser() {
-        outputHandler.showCommentForUserAction();
-        return inputHandler.getUserActionFromUser();
-    }
-
-    private CellPosition getCellInputFromUser() {
-        outputHandler.showCommentForSelectionCell();
-
-        // CellPosition이라는 Value Object가 만들어 질 때부터 유효성 검사하고, 만들어 지는 순간 인덱스의 기능을 함
-        CellPosition cellPosition = inputHandler.getCellPositionFromUser();
-        if (gameBoard.isInvalidCellPosition(cellPosition)) { // 올바른 cellPosition으로 gameBoard에서 동작할 수 있는가?
-            throw new GameException("잘못된 좌표를 선택하셨습니다.");
-        }
-
-        return cellPosition;
     }
 
     // 만약에, 여러군데에서 사용하는 메서드라면, 해당 메서드를 수정 또는 변경 했을 때 해당 메서드를 사용하는 곳이 모두 영향이 간다.
