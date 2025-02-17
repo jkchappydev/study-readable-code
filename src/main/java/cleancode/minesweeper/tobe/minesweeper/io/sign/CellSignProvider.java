@@ -28,7 +28,7 @@ public enum CellSignProvider implements CellSignProvidable {
     NUMBER(CellSnapshotStatus.NUMBER) {
         @Override
         public String provide(CellSnapshot cellSnapshot) {
-            return String.valueOf(cellSnapshot);
+            return String.valueOf(cellSnapshot.getNearbyLandMineCount());
         }
     },
     UNCHECKED(CellSnapshotStatus.UNCHECKED) {

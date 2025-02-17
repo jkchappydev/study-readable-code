@@ -27,6 +27,7 @@ public class NumberCell implements Cell {
         if (cellState.isFlagged()) {
             return CellSnapshot.ofFlag();
         }
+
         return CellSnapshot.ofUnchecked();
     }
 
@@ -42,7 +43,7 @@ public class NumberCell implements Cell {
 
     @Override
     public boolean isChecked() {
-        return cellState.isChecked();
+        return cellState.isOpened();
     }
 
     @Override
