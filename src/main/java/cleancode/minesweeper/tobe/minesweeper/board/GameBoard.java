@@ -8,6 +8,7 @@ import cleancode.minesweeper.tobe.minesweeper.board.position.RelativePosition;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Stack;
 
 public class GameBoard {
 
@@ -44,7 +45,8 @@ public class GameBoard {
             return;
         }
 
-        openSurroundedCells(cellPosition);
+        // openSurroundedCells(cellPosition);
+        openSurroundedCells2(cellPosition);
         checkIfGameIsOver();
     }
 
@@ -154,6 +156,44 @@ public class GameBoard {
 
         List<CellPosition> surroundedPositions = calculateSurroundedPositions(cellPosition, getRowSize(), getColSize());
         surroundedPositions.forEach(this::openSurroundedCells);
+    }
+
+    // 스택 자료구조를 활용한 DFS
+    private void openSurroundedCells2(CellPosition cellPosition) {
+        // 1. 스택 자료구조 생성
+        Stack<CellPosition> stack = new Stack<>();
+
+        // 2. 첫번째 셀 포지션을 스택에 넣는다.
+        stack.push(cellPosition);
+
+        // 3. 스택이 비어있을때 까지 반복
+        while (!stack.isEmpty()) {
+            openAndPushCellAt(stack);
+        }
+    }
+
+    private void openAndPushCellAt(Stack<CellPosition> stack) {
+        // 3. 스택에서 셀 하나를 꺼내서 아래의 작업을 수행
+        CellPosition currentCellPosition = stack.pop();
+        if (isOpenedCell(currentCellPosition)) {
+            return;
+        }
+
+        if (isLandMineCellAt(currentCellPosition)) {
+            return;
+        }
+
+        openOneCellAt(currentCellPosition);
+
+        if (doesCellHaveLandMineCount(currentCellPosition)) {
+            return;
+        }
+
+        // 4. 스택에서 꺼낸 셀 다음 단계의 스택에 남아 있는 셀(=꺼낸 셀의 주변 셀)들을 다시 스택에 삽입
+        List<CellPosition> surroundedPositions = calculateSurroundedPositions(currentCellPosition, getRowSize(), getColSize());
+        for(CellPosition surroundedPosition : surroundedPositions) {
+            stack.push(surroundedPosition);
+        }
     }
 
     private void openOneCellAt(CellPosition cellPosition) {

@@ -22,7 +22,7 @@ public class GameApplication {
 //        OutputHandler outputHandler = new ConsoleOutputHandler();
 
         GameConfig gameConfig = new GameConfig(
-                new VeryBeginner(),
+                new Advanced(),
                 new ConsoleInputHandler(),
                 new ConsoleOutputHandler()
         );
