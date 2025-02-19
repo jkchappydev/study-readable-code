@@ -6,9 +6,9 @@ import cleancode.minesweeper.tobe.minesweeper.board.position.CellPosition;
 import cleancode.minesweeper.tobe.minesweeper.board.position.CellPositions;
 import cleancode.minesweeper.tobe.minesweeper.board.position.RelativePosition;
 
-import java.util.Arrays;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
-import java.util.Stack;
 
 public class GameBoard {
 
@@ -61,8 +61,7 @@ public class GameBoard {
         int rowSize = getRowSize();
         int colSize = getColSize();
 
-        return cellPosition.isRowIndexMoreThanOrEqual(rowSize)
-                || cellPosition.isColIndexMoreThanOrEqual(colSize);
+        return cellPosition.isRowIndexMoreThanOrEqual(rowSize) || cellPosition.isColIndexMoreThanOrEqual(colSize);
     }
 
     public boolean isInProgress() {
@@ -110,7 +109,7 @@ public class GameBoard {
     private void initializeNumberCells(List<CellPosition> numberPositionCandidates) {
         for (CellPosition candidatePosition : numberPositionCandidates) {
             int count = countNearbyLandMines(candidatePosition);
-            if(count != 0) {
+            if (count != 0) {
                 updateCellAt(candidatePosition, new NumberCell(count));
             }
         }
@@ -119,20 +118,13 @@ public class GameBoard {
     private int countNearbyLandMines(CellPosition cellPosition) {
         int rowSize = getRowSize();
         int colSize = getColSize();
-        long count = calculateSurroundedPositions(cellPosition, rowSize, colSize).stream()
-                .filter(this::isLandMineCellAt)
-                .count();
+        long count = calculateSurroundedPositions(cellPosition, rowSize, colSize).stream().filter(this::isLandMineCellAt).count();
 
         return (int) count;
     }
 
     private List<CellPosition> calculateSurroundedPositions(CellPosition cellPosition, int rowSize, int colSize) {
-        return RelativePosition.SURROUNDED_POSITIONS.stream()
-                .filter(cellPosition::canCalculatePositionBy)
-                .map(cellPosition::calculatePositionBy)
-                .filter(position -> position.isRowIndexLessThan(rowSize))
-                .filter(position -> position.isColIndexLessThan(colSize))
-                .toList();
+        return RelativePosition.SURROUNDED_POSITIONS.stream().filter(cellPosition::canCalculatePositionBy).map(cellPosition::calculatePositionBy).filter(position -> position.isRowIndexLessThan(rowSize)).filter(position -> position.isColIndexLessThan(colSize)).toList();
     }
 
     private void updateCellAt(CellPosition position, Cell cell) {
@@ -160,21 +152,20 @@ public class GameBoard {
 
     // 스택 자료구조를 활용한 DFS
     private void openSurroundedCells2(CellPosition cellPosition) {
-        // 1. 스택 자료구조 생성
-        Stack<CellPosition> stack = new Stack<>();
-
+        // 1. 덱(스택+큐) 자료구조 생성
+        Deque<CellPosition> deque = new ArrayDeque<>();
         // 2. 첫번째 셀 포지션을 스택에 넣는다.
-        stack.push(cellPosition);
+        deque.push(cellPosition);
 
         // 3. 스택이 비어있을때 까지 반복
-        while (!stack.isEmpty()) {
-            openAndPushCellAt(stack);
+        while (!deque.isEmpty()) {
+            openAndPushCellAt(deque);
         }
     }
 
-    private void openAndPushCellAt(Stack<CellPosition> stack) {
+    private void openAndPushCellAt(Deque<CellPosition> deque) {
         // 3. 스택에서 셀 하나를 꺼내서 아래의 작업을 수행
-        CellPosition currentCellPosition = stack.pop();
+        CellPosition currentCellPosition = deque.pop();
         if (isOpenedCell(currentCellPosition)) {
             return;
         }
@@ -191,8 +182,8 @@ public class GameBoard {
 
         // 4. 스택에서 꺼낸 셀 다음 단계의 스택에 남아 있는 셀(=꺼낸 셀의 주변 셀)들을 다시 스택에 삽입
         List<CellPosition> surroundedPositions = calculateSurroundedPositions(currentCellPosition, getRowSize(), getColSize());
-        for(CellPosition surroundedPosition : surroundedPositions) {
-            stack.push(surroundedPosition);
+        for (CellPosition surroundedPosition : surroundedPositions) {
+            deque.push(surroundedPosition);
         }
     }
 
