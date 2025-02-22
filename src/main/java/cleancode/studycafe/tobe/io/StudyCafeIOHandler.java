@@ -45,4 +45,5 @@ public class StudyCafeIOHandler {
         outputHandler.askLockerPass(lockerPassCandidate);
         return inputHandler.getLockerSelection();
     }
+
 }
